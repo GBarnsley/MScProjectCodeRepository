@@ -6,6 +6,35 @@ library(EpiDataAug)
 load("SimulatedEpidemics.Rda")
 set.seed(01001)
 acfLagMax <- 100
+plotNewIestimates <- function(Samples, oneInEvery, realValue, UpperLim = 50){
+  plottingSamples <- seq(1, nrow(Samples), by = oneInEvery)
+  timeMax <- ncol(Samples[,-c(1,2)])
+  rows <- length(plottingSamples)*timeMax
+  newIs <- data.frame(sample = rep(0,rows),
+                      time = rep(0,rows),
+                      newI = rep(0,rows))
+  rowPos <- 1
+  for(i in plottingSamples){
+    for(j in 1:timeMax){
+      newIs[rowPos,1:3] <- c(i,j,Samples[i,j+2][[1]])
+      rowPos <- rowPos + 1
+    }
+  }
+  print(
+    ggplot() + 
+      geom_line(data = newIs,
+                aes(x = time, y = newI, group = sample),
+                alpha = 0.03,
+                size = 1) +
+      geom_line(aes(
+        x = 1:length(realValue),
+        y = realValue),
+        colour = "red",
+        size = 1) +
+      xlim(1,UpperLim) +
+      labs(x = "Time", y = "I*")
+  )
+}
 ##Constant Parameters:
 samples <- 1000
 burnin <- 15000
@@ -121,31 +150,7 @@ ggplot() +
   geom_hline(aes(yintercept = -0.1), linetype = "dashed") + 
   labs(x = "Lag", y = "ACF")
 #newI plot
-plottingSamples <- seq(10, samples, by = 100)
-timeMax <- ncol(model@Samples[,-c(1,2)])
-rows <- length(plottingSamples)*timeMax
-newIs <- data.frame(sample = rep(0,rows),
-                    time = rep(0,rows),
-                    newI = rep(0,rows))
-rowPos <- 1
-for(i in plottingSamples){
-  for(j in 1:timeMax){
-    newIs[rowPos,1:3] <- c(i,j,model@Samples[i,j+2][[1]])
-    rowPos <- rowPos + 1
-  }
-}
-ggplot() + 
-  geom_line(aes(
-    x = 1:length(SimulatedEpidemics[[1]]$newI),
-    y = SimulatedEpidemics[[1]]$newI),
-    colour = "red",
-    size = 1) +
-  geom_line(data = newIs,
-            aes(x = time, y = newI, group = sample),
-            alpha = 0.25,
-            size = 1) +
-  xlim(1,14) +
-  labs(x = "Time", y = "I*")
+plotNewIestimates(model@Samples, 1, SimulatedEpidemics[[1]]$newI, UpperLim = 15)
 
 ##Summaries:
 colMeans(model@Samples[,c(1,2)])
@@ -213,31 +218,8 @@ ggplot() +
   geom_hline(aes(yintercept = -0.1), linetype = "dashed") + 
   labs(x = "Lag", y = "ACF")
 #newI plot
-plottingSamples <- seq(10, samples, by = 100)
-timeMax <- ncol(model@Samples[,-c(1,2)])
-rows <- length(plottingSamples)*timeMax
-newIs <- data.frame(sample = rep(0,rows),
-                    time = rep(0,rows),
-                    newI = rep(0,rows))
-rowPos <- 1
-for(i in plottingSamples){
-  for(j in 1:timeMax){
-    newIs[rowPos,1:3] <- c(i,j,model@Samples[i,j+2][[1]])
-    rowPos <- rowPos + 1
-  }
-}
-ggplot() + 
-  geom_line(aes(
-    x = 1:length(SimulatedEpidemics[[2]]$newI),
-    y = SimulatedEpidemics[[2]]$newI),
-    colour = "red",
-    size = 0.75) +
-  geom_line(data = newIs,
-            aes(x = time, y = newI, group = sample),
-            alpha = 0.25,
-            size = 0.75) +
-  xlim(1,75) +
-  labs(x = "Time", y = "I*")
+plotNewIestimates(model@Samples, 1, SimulatedEpidemics[[2]]$newI, UpperLim = 55)
+
 ##Summaries:
 colMeans(model@Samples[,c(1,2)])
 #credible interval

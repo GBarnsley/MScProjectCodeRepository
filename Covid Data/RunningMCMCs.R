@@ -4,6 +4,31 @@ load("Covid.Rda")
 library(EpiDataAug)
 library(ggplot2)
 library(mcmcse)
+##for making plots
+plotNewIestimates <- function(Samples, oneInEvery, UpperLim = 50){
+  plottingSamples <- seq(1, nrow(Samples), by = oneInEvery)
+  timeMax <- ncol(Samples[,-c(1,2)])
+  rows <- length(plottingSamples)*timeMax
+  newIs <- data.frame(sample = rep(0,rows),
+                      time = rep(0,rows),
+                      newI = rep(0,rows))
+  rowPos <- 1
+  for(i in plottingSamples){
+    for(j in 1:timeMax){
+      newIs[rowPos,1:3] <- c(i,j,Samples[i,j+2][[1]])
+      rowPos <- rowPos + 1
+    }
+  }
+  print(
+    ggplot() + 
+      geom_line(data = newIs,
+                aes(x = time, y = newI, group = sample),
+                alpha = 0.03,
+                size = 1) +
+      xlim(1,UpperLim) +
+      labs(x = "Time", y = "I*")
+  )
+}
 ##SIR with R0 Prior:
 SIRclass <- setClass(
   "SIR",
@@ -190,6 +215,7 @@ model <- metropolisHastings(
   thin = thin
 )
 #producing plots
+plotNewIestimates(model@Samples, 5, UpperLim = 130) ##Takes a long time to run so probably best to skip
 ggplot() + 
   geom_line(aes(x = 1:(samples), y = model@Samples[,"Beta"])) +
   labs(x = "Sample Index", y = "Beta")
@@ -253,6 +279,7 @@ model <- metropolisHastings(
   burnin = burnin,
   thin = thin
 )
+plotNewIestimates(model@Samples, 5, UpperLim = 130) ##Takes a long time to run so probably best to skip
 ggplot() + 
   geom_line(aes(x = 1:(samples), y = model@Samples[,"Beta"])) +
   labs(x = "Sample Index", y = "Beta")
@@ -308,6 +335,7 @@ Neff <- multiESS(model@Samples[,c(1,2)])
 thin <- round(samples/Neff)
 model@MCMC$run(samples*thin, thin = thin, reset = FALSE)
 model@Samples <- as.matrix(model@MCMC$mvSamples)[(samples + 1):(2*samples),]
+plotNewIestimates(model@Samples, 5, UpperLim = 130) ##Takes a long time to run so probably best to skip
 ggplot() + 
   geom_line(aes(x = 1:(samples), y = model@Samples[,"Beta"])) +
   labs(x = "Sample Index", y = "Beta")
